@@ -1,0 +1,121 @@
+#include <Arduino.h>
+#include <LiquidCrystal_I2C.h>
+
+#define RS 21
+#define EN 22
+/*#define D7 14
+#define D6 27
+#define D5 26
+#define D4 25*/
+float voltaje, decenas, unidades, decimal; 
+float voltaje2, decenas2, unidades2, decimal2;
+int decenas3=0; 
+
+
+#define Pot 34
+#define Pot2 14
+
+//*******************************************************
+//Variables globales
+//***************************************************************** */
+/*Create an LCD Object
+LiquidCrystal LCD(RS, EN);
+uint8_t decenas, unidades, decimal; 
+unsigned int adcRaw; 
+float voltaje;*/
+LiquidCrystal_I2C lcd(0x27,16,2); 
+
+// Botón
+portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
+struct Button {
+    const uint8_t PIN;
+    volatile uint32_t numberKeyPresses;
+    bool pressed;
+};
+
+Button button1 = {33, 0, false};
+float resultado;
+
+// Interrupción del botón
+void IRAM_ATTR BTN1_ISR() {
+    portENTER_CRITICAL_ISR(&mux);
+    button1.numberKeyPresses++;
+    button1.pressed = true;
+    portEXIT_CRITICAL_ISR(&mux);
+}
+
+void setup() {
+  lcd.init(); 
+  Serial.begin(115200);
+  //Initialize the LCD. Parameters: [Columana, fila]
+  lcd.begin(16,2);
+  lcd.clear();
+
+   // Configura el pin del botón como entrada con resistencia pull-up
+  pinMode(button1.PIN, INPUT_PULLUP);
+  attachInterrupt(button1.PIN, BTN1_ISR, FALLING);
+
+
+}
+
+void loop() {
+
+  voltaje=analogReadMilliVolts(Pot)/10.0;
+  int temp=voltaje;
+  decenas=temp/100.0;
+  temp=temp-decenas * 100.00;
+  unidades = temp/10.0;
+
+  temp = temp-unidades *10.0;
+  decimal =temp;
+
+  voltaje2=analogReadMilliVolts(Pot2)/10.0;
+  int temp2=voltaje2;
+  decenas2=temp2/100.0;
+  temp2=temp2-decenas2 * 100.00;
+  unidades2 = temp2/10.0;
+
+  temp2 = temp2-unidades2 *10.0;
+  decimal2 =temp2;
+
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Pot1");
+  lcd.setCursor(0,1);
+  lcd.print(decenas);
+
+  
+  lcd.setCursor(6,0);
+  lcd.print("Pot2");
+  lcd.setCursor(6,1);
+  lcd.print(decenas2);
+  delay(250);
+
+  if (button1.pressed == true) {
+    
+    decenas3=decenas3+1;
+    button1.pressed = false;
+
+    if(decenas3>256){
+          decenas3=0;
+    }
+
+    if(decenas3<0){
+          decenas3=256;
+    }
+  }
+
+  lcd.setCursor(12,0);
+  lcd.print("Cont");
+  lcd.setCursor(12,1);
+  lcd.print(decenas3);
+  Serial.print(decenas3);
+  delay(250);
+  
+  
+  
+ 
+ 
+}
